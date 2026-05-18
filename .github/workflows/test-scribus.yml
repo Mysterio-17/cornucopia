@@ -1,0 +1,38 @@
+name: Test Headless Scribus
+
+on: [push]
+
+jobs:
+  test-scribus:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install Scribus and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y scribus xvfb poppler-utils
+
+      - name: Copy test files
+        run: |
+          cp tests/test.sla ~/test.sla
+          cp tests/export_test.py ~/export_test.py
+
+      - name: Run headless Scribus export
+        run: |
+          DISPLAY=:1 Xvfb :1 -screen 0 1024x768x24 &
+          sleep 2
+          DISPLAY=:1 scribus --no-gui --python-script ~/export_test.py
+
+      - name: Verify PDF exists
+        run: |
+          ls ~/output_test.pdf
+          pdfinfo ~/output_test.pdf
+
+      - name: Upload PDF as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-scribus-output
+          path: ~/output_test.pdf
